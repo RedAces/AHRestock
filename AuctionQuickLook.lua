@@ -1,47 +1,176 @@
 local ADDON_NAME = ...
 
--- Sections shown in the panel. Each row is a list of itemIDs; `quality` (optional)
--- draws the crafting quality marker at the start of the row and on each icon.
-local SECTIONS = {
+-- Each page is its own panel with its own tab in the auction house side bar.
+-- A page's sections are stacked top to bottom; `beside` places a section to the
+-- right of the previous one. Each row is a list of items: a plain itemID, or a
+-- { Q1, Q2 } pair for items with crafting qualities, of which only the quality
+-- picked in the panel's top-left switch is shown. An item table's `badge` is a
+-- short text drawn in the icon's corner; a row's `heading` is a small caption
+-- above it.
+local CONSUMABLES = {
 	{
 		title = "Flasks",
 		rows = {
-			-- Crit (Shattered Sun), Haste (Blood Knights), Mastery (Magisters), Versatility (Thalassian Resistance)
-			{ quality = 1, items = { 241327, 241325, 241323, 241321 } },
-			{ quality = 2, items = { 241326, 241324, 241322, 241320 } },
+			-- Shattered Sun, Blood Knights, Magisters, Thalassian Resistance
+			{ items = {
+				{ 241327, 241326, badge = "C" }, { 241325, 241324, badge = "H" },
+				{ 241323, 241322, badge = "M" }, { 241321, 241320, badge = "V" },
+			} },
+		},
+	},
+	{
+		title = "Weapon Oil",
+		beside = true,
+		rows = {
+			-- Thalassian Phoenix Oil
+			{ items = { { 243733, 243734 } } },
 		},
 	},
 	{
 		title = "Food",
 		rows = {
-			-- Royal Roast, Impossibly Royal Roast, Blooming Feast, Harandar Celebration
-			{ items = { 242275, 255847, 242273, 255846 } },
+			-- Royal Roast, Impossibly Royal Roast
+			{ items = { 242275, 255847 } },
+		},
+	},
+	{
+		title = "Feast",
+		beside = true,
+		rows = {
+			-- Blooming Feast, Harandar Celebration, Silvermoon Parade
+			{ items = { 242273, 255846, 255845 } },
 		},
 	},
 	{
 		title = "Pots",
 		rows = {
-			-- Recklessness, Light's Potential, Liquid Luster, Lightfused Mana Potion,
+			-- Recklessness, Light's Potential, Liquid Luster, Lightfused Mana Potion, Potion of Devoured Dreams
+			{ items = {
+				{ 241289, 241288 }, { 241309, 241308 }, { 271886, 271887 }, { 241301, 241300 }, { 241295, 241294 },
+			} },
 			-- Silvermoon Health Potion, Concentrated Silvermoon Health Potion
-			{ quality = 1, items = { 241289, 241309, 271886, 241301, 241305, 271883 } },
-			{ quality = 2, items = { 241288, 241308, 271887, 241300, 241304, 271884 } },
+			{ items = {
+				{ 241305, 241304 }, { 271883, 271884 },
+			} },
 		},
 	},
+	{
+		title = "Other",
+		rows = {
+			-- Emergency Soul Link, Void-Touched Drums
+			{ items = { { 248486, 269586 }, 244639 } },
+			-- Auto-Hammer, Inky Black Potion, Void-Touched Augment Rune
+			{ items = { 132514, 124640, 259085 } },
+		},
+	},
+	{
+		-- Flawless gems as a grid: columns = main stat (gem color), rows = second
+		-- stat, both in flask order (Crit, Haste, Mastery, Versatility); the
+		-- diagonal holds the single-stat gems. Badges name the higher (main) stat
+		-- first, then the lower one.
+		title = "Gems",
+		rows = {
+			--                         Garnet                           Peridot                          Amethyst                         Lapis
+			{ items = { { 240903, 240904, badge = "C" },  { 240889, 240890, badge = "HC" }, { 240897, 240898, badge = "MC" }, { 240913, 240914, badge = "VC" } } }, -- Deadly
+			{ items = { { 240905, 240906, badge = "CH" }, { 240887, 240888, badge = "H" },  { 240899, 240900, badge = "MH" }, { 240915, 240916, badge = "VH" } } }, -- Quick
+			{ items = { { 240907, 240908, badge = "CM" }, { 240891, 240892, badge = "HM" }, { 240895, 240896, badge = "M" },  { 240917, 240918, badge = "VM" } } }, -- Masterful
+			{ items = { { 240909, 240910, badge = "CV" }, { 240893, 240894, badge = "HV" }, { 240901, 240902, badge = "MV" }, { 240911, 240912, badge = "V" } } },  -- Versatile
+			-- Indecipherable Eversong Diamond (primary stat)
+			{ heading = "Diamond", items = { { 240982, 240983, badge = "P" } } },
+		},
+	},
+}
+
+local ENCHANTS = {
+	{
+		title = "Enchants",
+		rows = {
+			-- Empowered Blessing of Speed, Empowered Hex of Leeching, Empowered Rune of Avoidance
+			{ heading = "Helm", items = {
+				{ 243980, 243981, badge = "S" }, { 243950, 243951, badge = "L" }, { 244006, 244007, badge = "A" },
+			} },
+			-- Akil'zon's Swiftness, Silvermoon's Mending, Amirdrassil's Grace
+			{ heading = "Shoulder", items = {
+				{ 243962, 243963, badge = "S" }, { 244020, 244021, badge = "L" }, { 243990, 243991, badge = "A" },
+			} },
+			-- Mark of Nalorakk (Str), Mark of the Magister (Int), Mark of the Rootwarden (Agi),
+			-- Mark of the Worldsoul (primary stat)
+			{ heading = "Chest", items = { { 243946, 243947 }, { 244002, 244003 }, { 243974, 243975 }, { 243976, 243977 } } },
+			-- Forest Hunter's Armor Kit (Agi/Str), Sunfire Silk Spellthread (Int)
+			{ heading = "Legs", items = { { 244640, 244641 }, { 240094, 240133 } } },
+			-- Farstrider's Hunt, Shaladrassil's Roots, Lynx's Dexterity
+			{ heading = "Boots", items = {
+				{ 244008, 244009, badge = "S" }, { 243982, 243983, badge = "L" }, { 243952, 243953, badge = "A" },
+			} },
+			-- Nature's Fury, Silvermoon's Alacrity, Zul'jin's Mastery, Silvermoon's Tenacity,
+			-- Eyes of the Eagle (critical strike effectiveness)
+			{ heading = "Rings", items = {
+				{ 243986, 243987, badge = "C" }, { 244014, 244015, badge = "H" }, { 243958, 243959, badge = "M" },
+				{ 244016, 244017, badge = "V" }, { 243956, 243957, badge = "C%" },
+			} },
+			-- Stat procs: Jan'alai's Precision, Berserker's Rage, Arcane Mastery, Worldsoul Tenacity,
+			-- Acuity of the Ren'dorei (primary stat), Rite of the Hash'ey (random secondary)
+			{ heading = "Weapon", items = {
+				{ 243970, 243971, badge = "C" }, { 243972, 243973, badge = "H" }, { 244030, 244031, badge = "M" },
+				{ 244000, 244001, badge = "V" }, { 244028, 244029, badge = "P" }, { 273071, 273072 },
+			} },
+			-- Flames of the Sin'dorei, Strength of Halazzi, Worldsoul Aegis, Worldsoul Cradle
+			{ items = { { 244026, 244027 }, { 243968, 243969 }, { 243998, 243999 }, { 243996, 243997 } } },
+		},
+	},
+}
+
+local CRAFTING = {
+	{
+		title = "Embellishments",
+		rows = {
+			-- Grouped by the gear they can go on.
+			-- Blessed Pango Charm, Adorned Fang, Lucky Keychain (recrafting with it removes the embellishment)
+			{ heading = "Most equipment", items = { { 244603, 244604 }, { 273068, 273069 }, 248130 } },
+			-- Devouring Banding, Primal Spore Binding
+			{ heading = "Weapons and armor", items = { { 244674, 244675 }, { 244607, 244608 } } },
+			-- Arcanoweave Lining, Sunfire Silk Lining, Snakeskin Lining
+			{ heading = "Armor", items = { { 240166, 240167 }, { 240164, 240165 }, { 270898, 270899 } } },
+			-- Darkmoon Sigils: Blood, Hunt, Rot, Void
+			{ heading = "Weapons and offhands", items = { { 245871, 245872 }, { 245875, 245876 }, { 245877, 245878 }, { 245873, 245874 } } },
+			-- Hunter's Ritual Stone
+			{ heading = "Blacksmithing weapons", items = { { 273059, 273060 } } },
+			-- Polished Ammolite
+			{ heading = "Accessories", items = { { 273065, 273066 } } },
+			-- Coiled Snake-Eye
+			{ heading = "Guns", items = { { 273062, 273063 } } },
+		},
+	},
+	{
+		-- Thalassian missives as a triangle grid in flask order: rows = first stat
+		-- (C, H, M), columns = second stat (H, M, V); `false` leaves a cell empty.
+		title = "Missives",
+		rows = {
+			-- Fireflash, Peerless, Quickblade
+			{ items = { { 245785, 245786, badge = "CH" }, { 245789, 245790, badge = "CM" }, { 245791, 245792, badge = "CV" } } },
+			-- Feverflare, Aurora
+			{ items = { false, { 245783, 245784, badge = "HM" }, { 245781, 245782, badge = "HV" } } },
+			-- Harmonious
+			{ items = { false, false, { 245787, 245788, badge = "MV" } } },
+		},
+	},
+}
+
+-- `icon` is the itemID whose icon the side bar tab shows.
+local PAGES = {
+	{ key = "consumables", title = "Consumables", icon = 241326, sections = CONSUMABLES },
+	{ key = "enchants", title = "Enchants", icon = 243981, sections = ENCHANTS },
+	{ key = "crafting", title = "Crafting", icon = 245786, sections = CRAFTING },
 }
 
 local ICON_SIZE = 36
 local ICON_GAP = 6
 local PADDING = 12
-local QUALITY_COL = 22
-local maxIcons = 0
-for _, section in ipairs(SECTIONS) do
-	for _, row in ipairs(section.rows) do
-		maxIcons = math.max(maxIcons, #row.items)
-	end
-end
-local PANEL_WIDTH = PADDING * 2 + QUALITY_COL + maxIcons * ICON_SIZE + (maxIcons - 1) * ICON_GAP
+local GROUP_GAP = 16
+local BADGE_FONT = "Interface\\AddOns\\EllesmereUI\\media\\fonts\\Expressway Bold.ttf"
 
-local panel, toggle
+-- Buttons showing a { Q1, Q2 } pair and the quality checkboxes of all pages.
+local pairButtons, qualityChecks = {}, {}
 
 local function QualityAtlas(quality)
 	if not quality then return end
@@ -53,24 +182,43 @@ local function QualityAtlas(quality)
 	end
 end
 
--- Open the default UI's commodity buy view for this item; the player then enters
--- a quantity and confirms with "Buy Now" as usual.
+-- Open the default UI's buy view for this item; the player then enters a
+-- quantity (or picks an auction) and confirms the purchase as usual.
+local keyInfoWaiter = CreateFrame("Frame")
+
 local function OpenBuyView(itemID)
 	local ahf = AuctionHouseFrame
-	if not ahf or not ahf:IsShown() then return end
+	if not ahf or not ahf:IsShown() then
+		print("|cff33ff99AuctionQuickLook|r: Open the auction house to buy items.")
+		return
+	end
 	local itemKey = C_AuctionHouse.MakeItemKey(itemID)
 	local info = C_AuctionHouse.GetItemKeyInfo(itemKey)
-	if info and not info.isCommodity then
-		ahf:SelectBrowseResult({ itemKey = itemKey, minPrice = 0, totalQuantity = 0 })
-	else
+	if not info then
+		-- Commodity or not decides which buy view to open; retry once the
+		-- item key info has arrived.
+		keyInfoWaiter.itemID = itemID
+		keyInfoWaiter:RegisterEvent("ITEM_KEY_ITEM_INFO_RECEIVED")
+		return
+	end
+	if info.isCommodity then
 		ahf:SetDisplayMode(AuctionHouseFrameDisplayMode.CommoditiesBuy)
 		ahf.CommoditiesBuyFrame:SetItemIDAndPrice(itemID, 0)
+	else
+		ahf:SelectBrowseResult({ itemKey = itemKey, minPrice = 0, totalQuantity = 0 })
 	end
 	-- Opening the buy view alone does not query the server; the view fills in
 	-- once the search results arrive.
 	local sorts = { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } }
-	C_AuctionHouse.SendSearchQuery(itemKey, sorts, (info and not info.isCommodity) or false)
+	C_AuctionHouse.SendSearchQuery(itemKey, sorts, not info.isCommodity)
 end
+
+keyInfoWaiter:SetScript("OnEvent", function(self, _, itemID)
+	if itemID ~= self.itemID then return end
+	self:UnregisterEvent("ITEM_KEY_ITEM_INFO_RECEIVED")
+	self.itemID = nil
+	OpenBuyView(itemID)
+end)
 
 local function ItemButton_OnClick(self)
 	local link = select(2, C_Item.GetItemInfo(self.itemID))
@@ -82,44 +230,134 @@ local function ItemButton_OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 	GameTooltip:SetItemByID(self.itemID)
 	GameTooltip:AddLine(" ")
-	GameTooltip:AddLine("Klick: im Auktionshaus kaufen", 0.4, 0.8, 1)
+	GameTooltip:AddLine("Click: buy at the auction house", 0.4, 0.8, 1)
 	GameTooltip:Show()
 end
 
-local function CreateItemButton(parent, itemID, quality)
-	local b = CreateFrame("Button", nil, parent)
-	b:SetSize(ICON_SIZE, ICON_SIZE)
+local function SetButtonItem(b, itemID, quality)
 	b.itemID = itemID
-
-	b.icon = b:CreateTexture(nil, "ARTWORK")
-	b.icon:SetAllPoints()
 	b.icon:SetTexture(C_Item.GetItemIconByID(itemID) or 134400)
-
-	b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-	b:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
 
 	local atlas = QualityAtlas(quality)
 	if atlas then
-		b.quality = b:CreateTexture(nil, "OVERLAY")
-		b.quality:SetAtlas(atlas, true)
-		b.quality:SetPoint("TOPLEFT", -2, 2)
+		b.quality:SetAtlas(atlas)
+		b.quality:SetSize(18, 18)
 	end
+	b.quality:SetShown(atlas ~= nil)
+
+	-- Icon may not be cached on first login; refresh once the item data arrives.
+	Item:CreateFromItemID(itemID):ContinueOnItemLoad(function()
+		if b.itemID == itemID then
+			b.icon:SetTexture(C_Item.GetItemIconByID(itemID))
+		end
+	end)
+end
+
+local function CreateItemButton(parent, item)
+	local b = CreateFrame("Button", nil, parent)
+	b:SetSize(ICON_SIZE, ICON_SIZE)
+
+	-- Flat 1px black border with the icon zoomed in 15%, like EllesmereUI's icons.
+	local border = b:CreateTexture(nil, "BACKGROUND")
+	border:SetAllPoints()
+	border:SetColorTexture(0, 0, 0, 1)
+	b.icon = b:CreateTexture(nil, "ARTWORK")
+	b.icon:SetPoint("TOPLEFT", 1, -1)
+	b.icon:SetPoint("BOTTOMRIGHT", -1, 1)
+	b.icon:SetTexCoord(0.075, 0.925, 0.075, 0.925)
+	b.quality = b:CreateTexture(nil, "OVERLAY")
+	b.quality:SetPoint("TOPLEFT", -1, 1)
+
+	b:SetHighlightTexture("Interface\\Buttons\\WHITE8X8")
+	local highlight = b:GetHighlightTexture()
+	highlight:SetVertexColor(1, 1, 1, 0.15)
+	highlight:SetAllPoints(b.icon)
+	b:SetPushedTexture("Interface\\Buttons\\WHITE8X8")
+	local pushed = b:GetPushedTexture()
+	pushed:SetVertexColor(0, 0, 0, 0.3)
+	pushed:SetAllPoints(b.icon)
 
 	b:SetScript("OnClick", ItemButton_OnClick)
 	b:SetScript("OnEnter", ItemButton_OnEnter)
 	b:SetScript("OnLeave", GameTooltip_Hide)
 
-	-- Icon may not be cached on first login; refresh once the item data arrives.
-	Item:CreateFromItemID(itemID):ContinueOnItemLoad(function()
-		b.icon:SetTexture(C_Item.GetItemIconByID(itemID))
-	end)
+	if type(item) == "table" then
+		b.pair = item
+		table.insert(pairButtons, b)
+		SetButtonItem(b, item[AuctionQuickLookDB.quality], AuctionQuickLookDB.quality)
+		if item.badge then
+			local badge = b:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+			-- SetFont fails if EllesmereUI (and its font) is not installed; the
+			-- template font stays then.
+			if not badge:SetFont(BADGE_FONT, 14, "THICKOUTLINE") then
+				local font, size = badge:GetFont()
+				badge:SetFont(font, size, "THICKOUTLINE")
+			end
+			badge:SetPoint("BOTTOMRIGHT", -1, 2)
+			badge:SetText(item.badge)
+		end
+	else
+		SetButtonItem(b, item)
+	end
 	return b
 end
 
-local function BuildPanel(ahf)
-	panel = CreateFrame("Frame", "AuctionQuickLookPanel", ahf, "BackdropTemplate")
-	panel:SetPoint("TOPLEFT", ahf, "TOPRIGHT", 2, 0)
-	panel:SetWidth(PANEL_WIDTH)
+local function ApplyQuality()
+	local q = AuctionQuickLookDB.quality
+	for _, check in ipairs(qualityChecks) do
+		check:SetChecked(check.quality == q)
+	end
+	for _, b in ipairs(pairButtons) do
+		SetButtonItem(b, b.pair[q], q)
+	end
+end
+
+-- Q1/Q2 checkboxes in the panel's top-left corner. They behave like radio
+-- buttons and switch every { Q1, Q2 } item on all pages. Returns the width used.
+local function CreateQualitySwitch(panel)
+	local anchor
+	for q = 1, 2 do
+		local check = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+		check:SetSize(22, 22)
+		if anchor then
+			check:SetPoint("LEFT", anchor, "RIGHT", 2, 0)
+		else
+			check:SetPoint("TOPLEFT", PADDING - 4, -PADDING + 4)
+		end
+		check.quality = q
+		check:SetScript("OnClick", function()
+			AuctionQuickLookDB.quality = q
+			ApplyQuality()
+		end)
+		local atlas = QualityAtlas(q)
+		local label = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+		label:SetPoint("LEFT", check, "RIGHT", 0, 0)
+		label:SetText(atlas and CreateAtlasMarkup(atlas, 24, 24) or ("Q" .. q))
+		table.insert(qualityChecks, check)
+		anchor = label
+	end
+	return 2 * (22 + 24 + 2)
+end
+
+local function BuildPanel(page, index)
+	local panel = CreateFrame("Frame", "AuctionQuickLookPanel" .. index, UIParent, "BackdropTemplate")
+	page.panel = panel
+	panel:Hide()
+	panel:SetClampedToScreen(true)
+	panel:SetMovable(true)
+	panel:RegisterForDrag("LeftButton")
+	-- Only the standalone window (opened via slash command) can be dragged.
+	panel:SetScript("OnDragStart", function(self)
+		if self.standalone then self:StartMoving() end
+	end)
+	panel:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		local point, _, relPoint, px, py = self:GetPoint()
+		AuctionQuickLookDB.pos = { point, relPoint, px, py }
+	end)
+	panel.CloseButton = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
+	panel.CloseButton:SetPoint("TOPRIGHT", 0, 0)
+	panel.CloseButton:Hide()
 	panel:SetBackdrop({
 		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -129,34 +367,58 @@ local function BuildPanel(ahf)
 	panel:SetBackdropColor(0.05, 0.05, 0.05, 0.92)
 	panel:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
 
+	local switchWidth = CreateQualitySwitch(panel)
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	title:SetPoint("TOP", 0, -PADDING)
-	title:SetText("AuctionQuickLook")
+	title:SetPoint("TOPLEFT", PADDING + switchWidth + 12, -PADDING)
+	title:SetText(page.title)
+	-- Room for switch, title and the standalone close button.
+	local right = PADDING + switchWidth + 12 + title:GetStringWidth() + 24
 
-	local y = -PADDING - 28
-	for _, section in ipairs(SECTIONS) do
+	local x, y = 0, -PADDING - 28
+	local top, bottom = y, y
+	for _, section in ipairs(page.sections) do
+		-- `beside` sections start at the same height, right of the previous one.
+		local headerX
+		if section.beside then
+			x, y = x + GROUP_GAP, top
+			headerX = x
+		else
+			x, y = PADDING, bottom
+			top = y
+			headerX = PADDING
+		end
+
 		local header = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-		header:SetPoint("TOPLEFT", PADDING, y)
+		header:SetPoint("TOPLEFT", headerX, y)
 		header:SetText(section.title)
+		right = math.max(right, headerX + header:GetStringWidth())
 		y = y - 20
 
+		local count = 0
 		for _, row in ipairs(section.rows) do
-			if row.quality then
-				local atlas = QualityAtlas(row.quality)
-				local label = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-				label:SetPoint("TOPLEFT", PADDING, y - (ICON_SIZE - 12) / 2)
-				label:SetText(atlas and CreateAtlasMarkup(atlas, 18, 18) or ("Q" .. row.quality))
+			if row.heading then
+				local heading = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+				heading:SetPoint("TOPLEFT", x, y)
+				heading:SetText(row.heading)
+				y = y - 14
 			end
 
-			for i, itemID in ipairs(row.items) do
-				local b = CreateItemButton(panel, itemID, row.quality)
-				b:SetPoint("TOPLEFT", PADDING + QUALITY_COL + (i - 1) * (ICON_SIZE + ICON_GAP), y)
+			for i, item in ipairs(row.items) do
+				if item then
+					local b = CreateItemButton(panel, item)
+					b:SetPoint("TOPLEFT", x + (i - 1) * (ICON_SIZE + ICON_GAP), y)
+				end
 			end
+			count = math.max(count, #row.items)
 			y = y - ICON_SIZE - ICON_GAP
 		end
 		y = y - 6
+		x = x + count * ICON_SIZE + (count - 1) * ICON_GAP
+		right = math.max(right, x)
+		bottom = math.min(bottom, y)
 	end
-	panel:SetHeight(-y + PADDING - ICON_GAP)
+	panel:SetWidth(right + PADDING)
+	panel:SetHeight(-bottom + PADDING - ICON_GAP)
 end
 
 local TAB_OFFSET_Y = -52
@@ -186,68 +448,124 @@ local function AnchorSideBar(anchor)
 	sideBar:SetPoint("BOTTOMLEFT", anchor, "BOTTOMRIGHT")
 end
 
-local function SetExpanded(expanded)
+-- The quest log tab template resets its icon to its own atlas on SetChecked,
+-- so the texture is re-applied every time (AllTheThings does the same).
+local function SetTabChecked(page, checked)
+	page.tab:SetChecked(checked)
+	page.tab.Icon:SetTexture(C_Item.GetItemIconByID(page.icon) or 134400)
+	page.tab.Icon:SetSize(24, 24)
+end
+
+local function AttachToAuctionHouse(panel)
+	panel.standalone = false
+	panel:SetParent(AuctionHouseFrame)
+	panel:ClearAllPoints()
+	panel:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 2, 0)
+	panel.CloseButton:Hide()
+end
+
+local function ShowStandalone(page)
+	for _, other in ipairs(PAGES) do
+		if other ~= page then other.panel:Hide() end
+	end
+	local panel = page.panel
+	panel.standalone = true
+	panel:SetParent(UIParent)
+	panel:SetFrameStrata("HIGH")
+	panel:ClearAllPoints()
+	local pos = AuctionQuickLookDB.pos
+	if pos then
+		panel:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4])
+	else
+		panel:SetPoint("CENTER")
+	end
+	panel.CloseButton:Show()
+	panel:Show()
+end
+
+local function SetPageShown(page, shown)
 	local sideBar = GetSideBar()
-	if expanded then
+	if shown then
+		AttachToAuctionHouse(page.panel)
 		local other = sideBar.Tabs[sideBar.selTab]
-		if other and other ~= toggle then
-			-- Let the other addon close its own panel first.
+		if other and other ~= page.tab then
+			-- Let the open tab (another addon's or another page's) close itself first.
 			other:GetScript("OnMouseUp")(other)
 		end
-		sideBar.selTab = toggle.tabIndex
-		AnchorSideBar(panel)
-	elseif sideBar.selTab == toggle.tabIndex then
+		sideBar.selTab = page.tab.tabIndex
+		AnchorSideBar(page.panel)
+	elseif sideBar.selTab == page.tab.tabIndex then
 		sideBar.selTab = 0
 		AnchorSideBar(AuctionHouseFrame)
 	end
-	panel:SetShown(expanded)
-	toggle:SetChecked(expanded)
+	page.panel:SetShown(shown)
+	SetTabChecked(page, shown)
 end
 
-local function OnTabClicked()
-	AuctionQuickLookDB.expanded = not panel:IsShown()
-	SetExpanded(AuctionQuickLookDB.expanded)
+local function OnTabClicked(page)
+	local shown = not page.panel:IsShown()
+	SetPageShown(page, shown)
+	AuctionQuickLookDB.openPage = shown and page.key or nil
 end
 
-local function CreateTab(sideBar)
+local function CreateTab(sideBar, page)
+	local function onClick() OnTabClicked(page) end
 	local ok, tab = pcall(CreateFrame, "Frame", nil, sideBar, "QuestLogTabButtonTemplate")
 	if ok and tab.SetCustomOnMouseUpHandler then
 		if QuestLogDisplayMode then
 			tab.displayMode = QuestLogDisplayMode.Quests
 		end
-		tab.tooltipText = "AuctionQuickLook"
-		tab:SetCustomOnMouseUpHandler(OnTabClicked)
+		tab.tooltipText = "AuctionQuickLook: " .. page.title
+		tab:SetCustomOnMouseUpHandler(onClick)
 	else
 		-- Fallback if the quest log tab template is unavailable.
 		tab = CreateFrame("Button", nil, sideBar)
 		tab:SetSize(32, 32)
 		tab.Icon = tab:CreateTexture(nil, "ARTWORK")
 		tab.Icon:SetPoint("CENTER")
-		tab:SetHighlightTexture("Interface\Buttons\ButtonHilight-Square", "ADD")
+		tab:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
 		tab.SetChecked = nop
-		tab:SetScript("OnMouseUp", OnTabClicked)
+		tab:SetScript("OnMouseUp", onClick)
 	end
-	tab.Icon:SetTexture(C_Item.GetItemIconByID(241326) or 134400)
-	tab.Icon:SetSize(24, 24)
 	return tab
 end
 
--- Register the tab after other addons have added theirs on the same show, so
+local function FindPage(key)
+	for _, page in ipairs(PAGES) do
+		if page.key == key then return page end
+	end
+end
+
+-- Register the tabs after other addons have added theirs on the same show, so
 -- AllTheThings keeps tab index 1, which it assumes for itself.
 local function OnAuctionHouseShown()
 	local sideBar = GetSideBar()
-	if not toggle then
-		toggle = CreateTab(sideBar)
-		table.insert(sideBar.Tabs, toggle)
-		toggle.tabIndex = #sideBar.Tabs
-		toggle:SetPoint("TOPLEFT", sideBar, "TOPRIGHT", -2, TAB_OFFSET_Y - (toggle.tabIndex - 1) * TAB_SPACING)
+	for _, page in ipairs(PAGES) do
+		if not page.tab then
+			page.tab = CreateTab(sideBar, page)
+			table.insert(sideBar.Tabs, page.tab)
+			page.tab.tabIndex = #sideBar.Tabs
+			page.tab:SetPoint("TOPLEFT", sideBar, "TOPRIGHT", -2, TAB_OFFSET_Y - (page.tab.tabIndex - 1) * TAB_SPACING)
+		end
 	end
-	SetExpanded(AuctionQuickLookDB.expanded and (sideBar.selTab == 0 or sideBar.selTab == toggle.tabIndex))
+
+	-- A standalone window that is open when the auction house opens docks to it.
+	local wanted = FindPage(AuctionQuickLookDB.openPage)
+	for _, page in ipairs(PAGES) do
+		if page.panel.standalone and page.panel:IsShown() then
+			wanted = page
+		end
+	end
+	if wanted and sideBar.selTab ~= 0 and sideBar.selTab ~= wanted.tab.tabIndex then
+		wanted = nil -- another addon's tab is open
+	end
+	for _, page in ipairs(PAGES) do
+		if page ~= wanted then SetPageShown(page, false) end
+	end
+	if wanted then SetPageShown(wanted, true) end
 end
 
 local function Setup()
-	BuildPanel(AuctionHouseFrame)
-	panel:Hide()
 	AuctionHouseFrame:HookScript("OnShow", function()
 		C_Timer.After(0, OnAuctionHouseShown)
 	end)
@@ -257,6 +575,71 @@ local function Setup()
 end
 
 EventUtil.ContinueOnAddOnLoaded(ADDON_NAME, function()
-	AuctionQuickLookDB = AuctionQuickLookDB or { expanded = false }
+	local db = AuctionQuickLookDB or {}
+	AuctionQuickLookDB = db
+	-- Older versions kept one `expanded` flag (the only page) and a quality per section.
+	if db.expanded ~= nil then
+		db.openPage = db.expanded and "consumables" or nil
+		db.expanded = nil
+	end
+	if type(db.quality) ~= "number" then
+		db.quality = 2
+	end
+	for i, page in ipairs(PAGES) do
+		BuildPanel(page, i)
+	end
+	-- Optional EllesmereUI look; does nothing without EllesmereUI or when the
+	-- user turned third-party skinning off for this addon.
+	if EllesmereUI and EllesmereUI.RegisterSkin then
+		EllesmereUI.RegisterSkin(ADDON_NAME, function(S)
+			for _, page in ipairs(PAGES) do
+				local panel = page.panel
+				S.Shell(panel, { noTopBar = true })
+				S.CloseButton(panel.CloseButton)
+				for _, region in ipairs({ panel:GetRegions() }) do
+					if region:GetObjectType() == "FontString" then
+						S.Font(region)
+					end
+				end
+			end
+			for _, check in ipairs(qualityChecks) do
+				S.Checkbox(check)
+			end
+		end)
+	end
+	ApplyQuality()
 	EventUtil.ContinueOnAddOnLoaded("Blizzard_AuctionHouseUI", Setup)
 end)
+
+-- /aql [page] toggles a page (by name prefix or number; default: the open one,
+-- else the first): docked tab while the auction house is open, otherwise a
+-- free-floating window.
+SLASH_AUCTIONQUICKLOOK1 = "/aql"
+SLASH_AUCTIONQUICKLOOK2 = "/auctionquicklook"
+SlashCmdList.AUCTIONQUICKLOOK = function(msg)
+	msg = strtrim(msg or ""):lower()
+	local page
+	if msg ~= "" then
+		page = PAGES[tonumber(msg)]
+		for _, p in ipairs(PAGES) do
+			if not page and p.key:sub(1, #msg) == msg then page = p end
+		end
+		if not page then
+			print("|cff33ff99AuctionQuickLook|r: Unknown page. Available: consumables, enchants, crafting")
+			return
+		end
+	else
+		for _, p in ipairs(PAGES) do
+			if not page and p.panel:IsVisible() then page = p end
+		end
+		page = page or PAGES[1]
+	end
+
+	if AuctionHouseFrame and AuctionHouseFrame:IsShown() and page.tab then
+		OnTabClicked(page)
+	elseif page.panel:IsVisible() then
+		page.panel:Hide()
+	else
+		ShowStandalone(page)
+	end
+end
