@@ -1,0 +1,8 @@
+## Interface: 120005, 120007, 120100, 120105
+## Title: AuctionQuickLook
+## Notes: Ausklappbare Schnellkauf-Leiste am Auktionshaus
+## Author: Matse
+## Version: 0.1.0
+## SavedVariables: AuctionQuickLookDB
+
+AuctionQuickLook.lua
