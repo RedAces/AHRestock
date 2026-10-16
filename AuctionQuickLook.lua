@@ -4,9 +4,9 @@ local ADDON_NAME = ...
 -- A page's sections are stacked top to bottom; `beside` places a section to the
 -- right of the previous one. Each row is a list of items: a plain itemID, or a
 -- { Q1, Q2 } pair for items with crafting qualities, of which only the quality
--- picked in the panel's top-left switch is shown. An item table's `badge` is a
--- short text drawn in the icon's corner; a row's `heading` is a small caption
--- above it.
+-- picked in the panel's top-left switch is shown; { itemID, badge = ... } is a
+-- single item with a badge. An item table's `badge` is a short text drawn in the
+-- icon's corner; a row's `heading` is a small caption above it.
 local CONSUMABLES = {
 	{
 		title = "Flasks",
@@ -19,26 +19,42 @@ local CONSUMABLES = {
 		},
 	},
 	{
-		title = "Weapon Oil",
-		beside = true,
+		title = "Weapon Oils",
 		rows = {
-			-- Thalassian Phoenix Oil
-			{ items = { { 243733, 243734 } } },
+			-- Thalassian Phoenix Oil, Oil of Dawn (healers)
+			{ items = { { 243733, 243734, badge = "CH" }, { 243735, 243736 } } },
 		},
 	},
 	{
-		title = "Food",
+		title = "Food primary stats",
 		rows = {
-			-- Royal Roast, Impossibly Royal Roast
-			{ items = { 242275, 255847 } },
+			-- Royal Roast, Impossibly Royal Roast (Hearty Royal Roast is bind on pickup)
+			{ items = { { 242275, badge = "P" }, { 255847, badge = "P" } } },
 		},
 	},
 	{
-		title = "Feast",
+		title = "Food secondary stats",
 		beside = true,
 		rows = {
-			-- Blooming Feast, Harandar Celebration, Silvermoon Parade
-			{ items = { 242273, 255846, 255845 } },
+			-- Champion's Bento (highest secondary stat), Arcano Cutlets, Fel-Kissed Filet,
+			-- Warped Wise Wings, Void-Kissed Fish Rolls
+			{ items = { 242274, { 242287, badge = "C" }, { 242286, badge = "H" }, { 242285, badge = "M" }, { 242284, badge = "V" } } },
+		},
+	},
+	{
+		title = "Feasts primary stats",
+		rows = {
+			-- Harandar Celebration, Silvermoon Parade
+			{ items = { { 255846, badge = "P" }, { 255845, badge = "P" } } },
+		},
+	},
+	{
+		title = "Feasts secondary stats",
+		beside = true,
+		rows = {
+			-- Highest secondary stat: Blooming Feast, Quel'dorei Medley, and from 12.1
+			-- Amani Cornucopia, Loa's Gathering, Feast of Knowledge
+			{ items = { 242273, 242272, 275264, 275265, 275266 } },
 		},
 	},
 	{
@@ -46,7 +62,7 @@ local CONSUMABLES = {
 		rows = {
 			-- Recklessness, Light's Potential, Liquid Luster, Lightfused Mana Potion, Potion of Devoured Dreams
 			{ items = {
-				{ 241289, 241288 }, { 241309, 241308 }, { 271886, 271887 }, { 241301, 241300 }, { 241295, 241294 },
+				{ 241289, 241288 }, { 241309, 241308, badge = "P" }, { 271886, 271887, badge = "V" }, { 241301, 241300 }, { 241295, 241294 },
 			} },
 			-- Silvermoon Health Potion, Concentrated Silvermoon Health Potion
 			{ items = {
@@ -57,10 +73,9 @@ local CONSUMABLES = {
 	{
 		title = "Other",
 		rows = {
-			-- Emergency Soul Link, Void-Touched Drums
-			{ items = { { 248486, 269586 }, 244639 } },
-			-- Auto-Hammer, Inky Black Potion, Void-Touched Augment Rune
-			{ items = { 132514, 124640, 259085 } },
+			-- Emergency Soul Link, Void-Touched Drums, Auto-Hammer, Inky Black Potion, Void-Touched Augment Rune,
+			-- Void-Shrouded Tincture (invisibility)
+			{ items = { { 248486, 269586 }, 244639, 132514, 124640, 259085, { 241303, 241302 } } },
 		},
 	},
 	{
@@ -75,29 +90,33 @@ local CONSUMABLES = {
 			{ items = { { 240905, 240906, badge = "CH" }, { 240887, 240888, badge = "H" },  { 240899, 240900, badge = "MH" }, { 240915, 240916, badge = "VH" } } }, -- Quick
 			{ items = { { 240907, 240908, badge = "CM" }, { 240891, 240892, badge = "HM" }, { 240895, 240896, badge = "M" },  { 240917, 240918, badge = "VM" } } }, -- Masterful
 			{ items = { { 240909, 240910, badge = "CV" }, { 240893, 240894, badge = "HV" }, { 240901, 240902, badge = "MV" }, { 240911, 240912, badge = "V" } } },  -- Versatile
-			-- Indecipherable Eversong Diamond (primary stat)
-			{ heading = "Diamond", items = { { 240982, 240983, badge = "P" } } },
+			-- Eversong Diamonds: Indecipherable (primary stat only), Powerful (+crit
+			-- effectiveness), Stoic (+armor), Telluric (+max mana)
+			{ heading = "Diamonds", items = {
+				{ 240982, 240983, badge = "P" }, { 240966, 240967 }, { 240970, 240971 }, { 240968, 240969 },
+			} },
 		},
 	},
 }
 
 local ENCHANTS = {
 	{
-		title = "Enchants",
+		-- No section title: the page title already says "Enchants".
 		rows = {
 			-- Empowered Blessing of Speed, Empowered Hex of Leeching, Empowered Rune of Avoidance
-			{ heading = "Helm", items = {
+			{ heading = "Helms", items = {
 				{ 243980, 243981, badge = "S" }, { 243950, 243951, badge = "L" }, { 244006, 244007, badge = "A" },
 			} },
 			-- Akil'zon's Swiftness, Silvermoon's Mending, Amirdrassil's Grace
-			{ heading = "Shoulder", items = {
+			{ heading = "Shoulders", items = {
 				{ 243962, 243963, badge = "S" }, { 244020, 244021, badge = "L" }, { 243990, 243991, badge = "A" },
 			} },
 			-- Mark of Nalorakk (Str), Mark of the Magister (Int), Mark of the Rootwarden (Agi),
 			-- Mark of the Worldsoul (primary stat)
-			{ heading = "Chest", items = { { 243946, 243947 }, { 244002, 244003 }, { 243974, 243975 }, { 243976, 243977 } } },
-			-- Forest Hunter's Armor Kit (Agi/Str), Sunfire Silk Spellthread (Int)
-			{ heading = "Legs", items = { { 244640, 244641 }, { 240094, 240133 } } },
+			{ heading = "Chests", items = { { 243946, 243947 }, { 244002, 244003 }, { 243974, 243975 }, { 243976, 243977, badge = "P" } } },
+			-- Forest Hunter's Armor Kit (Agi/Str + Stamina), Blood Knight's Armor Kit (Agi/Str + Armor),
+			-- Sunfire Silk Spellthread (Int + Stamina), Arcanoweave Spellthread (Int + max Mana)
+			{ heading = "Legs", items = { { 244640, 244641 }, { 244642, 244643 }, { 240094, 240133 }, { 240154, 240155 } } },
 			-- Farstrider's Hunt, Shaladrassil's Roots, Lynx's Dexterity
 			{ heading = "Boots", items = {
 				{ 244008, 244009, badge = "S" }, { 243982, 243983, badge = "L" }, { 243952, 243953, badge = "A" },
@@ -110,7 +129,7 @@ local ENCHANTS = {
 			} },
 			-- Stat procs: Jan'alai's Precision, Berserker's Rage, Arcane Mastery, Worldsoul Tenacity,
 			-- Acuity of the Ren'dorei (primary stat), Rite of the Hash'ey (random secondary)
-			{ heading = "Weapon", items = {
+			{ heading = "Weapons", items = {
 				{ 243970, 243971, badge = "C" }, { 243972, 243973, badge = "H" }, { 244030, 244031, badge = "M" },
 				{ 244000, 244001, badge = "V" }, { 244028, 244029, badge = "P" }, { 273071, 273072 },
 			} },
@@ -122,23 +141,24 @@ local ENCHANTS = {
 
 local CRAFTING = {
 	{
-		title = "Embellishments",
+		-- No section title; each heading names the embellishment group.
 		rows = {
 			-- Grouped by the gear they can go on.
-			-- Blessed Pango Charm, Adorned Fang, Lucky Keychain (recrafting with it removes the embellishment)
-			{ heading = "Most equipment", items = { { 244603, 244604 }, { 273068, 273069 }, 248130 } },
+			-- Blessed Pango Charm, Adorned Fang, Prismatic Focusing Iris,
+			-- Lucky Keychain (recrafting with it removes the embellishment)
+			{ heading = "Embellishments: Most equipment", items = { { 244603, 244604 }, { 273068, 273069 }, { 251487, 251488 }, 248130 } },
 			-- Devouring Banding, Primal Spore Binding
-			{ heading = "Weapons and armor", items = { { 244674, 244675 }, { 244607, 244608 } } },
+			{ heading = "Embellishments: Weapons and armor", items = { { 244674, 244675 }, { 244607, 244608 } } },
 			-- Arcanoweave Lining, Sunfire Silk Lining, Snakeskin Lining
-			{ heading = "Armor", items = { { 240166, 240167 }, { 240164, 240165 }, { 270898, 270899 } } },
+			{ heading = "Embellishments: Armor", items = { { 240166, 240167 }, { 240164, 240165 }, { 270898, 270899 } } },
 			-- Darkmoon Sigils: Blood, Hunt, Rot, Void
-			{ heading = "Weapons and offhands", items = { { 245871, 245872 }, { 245875, 245876 }, { 245877, 245878 }, { 245873, 245874 } } },
+			{ heading = "Embellishments: Weapons and offhands", items = { { 245871, 245872 }, { 245875, 245876 }, { 245877, 245878 }, { 245873, 245874 } } },
 			-- Hunter's Ritual Stone
-			{ heading = "Blacksmithing weapons", items = { { 273059, 273060 } } },
+			{ heading = "Embellishments: Blacksmithing weapons", items = { { 273059, 273060 } } },
 			-- Polished Ammolite
-			{ heading = "Accessories", items = { { 273065, 273066 } } },
+			{ heading = "Embellishments: Accessories", items = { { 273065, 273066 } } },
 			-- Coiled Snake-Eye
-			{ heading = "Guns", items = { { 273062, 273063 } } },
+			{ heading = "Embellishments: Guns", items = { { 273062, 273063 } } },
 		},
 	},
 	{
@@ -158,9 +178,9 @@ local CRAFTING = {
 
 -- `icon` is the itemID whose icon the side bar tab shows.
 local PAGES = {
-	{ key = "consumables", title = "Consumables", icon = 241326, sections = CONSUMABLES },
+	{ key = "consumables", title = "Consumables", icon = 241326, sections = CONSUMABLES, smallHeaders = true },
 	{ key = "enchants", title = "Enchants", icon = 243981, sections = ENCHANTS },
-	{ key = "crafting", title = "Crafting", icon = 245786, sections = CRAFTING },
+	{ key = "crafting", title = "Crafting", icon = 245786, sections = CRAFTING, smallHeaders = true },
 }
 
 local ICON_SIZE = 36
@@ -282,9 +302,14 @@ local function CreateItemButton(parent, item)
 	b:SetScript("OnLeave", GameTooltip_Hide)
 
 	if type(item) == "table" then
-		b.pair = item
-		table.insert(pairButtons, b)
-		SetButtonItem(b, item[AuctionQuickLookDB.quality], AuctionQuickLookDB.quality)
+		-- { itemID, badge = ... } has a badge but no qualities.
+		if item[2] then
+			b.pair = item
+			table.insert(pairButtons, b)
+			SetButtonItem(b, item[AuctionQuickLookDB.quality], AuctionQuickLookDB.quality)
+		else
+			SetButtonItem(b, item[1])
+		end
 		if item.badge then
 			local badge = b:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
 			-- SetFont fails if EllesmereUI (and its font) is not installed; the
@@ -388,11 +413,19 @@ local function BuildPanel(page, index)
 			headerX = PADDING
 		end
 
-		local header = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-		header:SetPoint("TOPLEFT", headerX, y)
-		header:SetText(section.title)
-		right = math.max(right, headerX + header:GetStringWidth())
-		y = y - 20
+		-- Right edge of this section's texts, so a `beside` neighbour starts after
+		-- a title that is wider than the icons below it.
+		local textRight = x
+
+		-- `smallHeaders` pages use the small yellow row-heading look for section
+		-- titles; a section without a title gets no header line.
+		if section.title then
+			local header = panel:CreateFontString(nil, "OVERLAY", page.smallHeaders and "GameFontNormalSmall" or "GameFontHighlight")
+			header:SetPoint("TOPLEFT", headerX, y)
+			header:SetText(section.title)
+			textRight = math.max(textRight, headerX + header:GetStringWidth())
+			y = y - (page.smallHeaders and 14 or 20)
+		end
 
 		local count = 0
 		for _, row in ipairs(section.rows) do
@@ -400,6 +433,7 @@ local function BuildPanel(page, index)
 				local heading = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 				heading:SetPoint("TOPLEFT", x, y)
 				heading:SetText(row.heading)
+				textRight = math.max(textRight, x + heading:GetStringWidth())
 				y = y - 14
 			end
 
@@ -413,7 +447,7 @@ local function BuildPanel(page, index)
 			y = y - ICON_SIZE - ICON_GAP
 		end
 		y = y - 6
-		x = x + count * ICON_SIZE + (count - 1) * ICON_GAP
+		x = math.max(x + count * ICON_SIZE + (count - 1) * ICON_GAP, textRight)
 		right = math.max(right, x)
 		bottom = math.min(bottom, y)
 	end
