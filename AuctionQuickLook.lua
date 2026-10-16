@@ -6,7 +6,7 @@ local ADDON_NAME = ...
 -- { Q1, Q2 } pair for items with crafting qualities, of which only the quality
 -- picked in the panel's top-left switch is shown; { itemID, badge = ... } is a
 -- single item with a badge. An item table's `badge` is a short text drawn in the
--- icon's corner; a row's `heading` is a small caption above it.
+-- icon's bottom edge; a row's `heading` is a small caption above it.
 local CONSUMABLES = {
 	{
 		title = "Flasks",
@@ -36,9 +36,9 @@ local CONSUMABLES = {
 		title = "Food secondary stats",
 		beside = true,
 		rows = {
-			-- Champion's Bento (highest secondary stat), Arcano Cutlets, Fel-Kissed Filet,
+			-- Champion's Bento (highest secondary stat), Arcano Cutlets, Sun-Seared Lumifin, Fel-Kissed Filet,
 			-- Warped Wise Wings, Void-Kissed Fish Rolls
-			{ items = { 242274, { 242287, badge = "C" }, { 242286, badge = "H" }, { 242285, badge = "M" }, { 242284, badge = "V" } } },
+			{ items = { 242274, { 242287, badge = "C" }, { 242283, badge = "C" }, { 242286, badge = "H" }, { 242285, badge = "M" }, { 242284, badge = "V" } } },
 		},
 	},
 	{
@@ -60,9 +60,10 @@ local CONSUMABLES = {
 	{
 		title = "Pots",
 		rows = {
-			-- Recklessness, Light's Potential, Liquid Luster, Lightfused Mana Potion, Potion of Devoured Dreams
+			-- Recklessness, Light's Potential, Draught of Rampant Abandon, Liquid Luster,
+			-- Lightfused Mana Potion, Potion of Devoured Dreams
 			{ items = {
-				{ 241289, 241288 }, { 241309, 241308, badge = "P" }, { 271886, 271887, badge = "V" }, { 241301, 241300 }, { 241295, 241294 },
+				{ 241289, 241288 }, { 241309, 241308, badge = "P" }, { 241293, 241292, badge = "P" }, { 271886, 271887, badge = "V" }, { 241301, 241300 }, { 241295, 241294 },
 			} },
 			-- Silvermoon Health Potion, Concentrated Silvermoon Health Potion
 			{ items = {
@@ -75,7 +76,7 @@ local CONSUMABLES = {
 		rows = {
 			-- Emergency Soul Link, Void-Touched Drums, Auto-Hammer, Inky Black Potion, Void-Touched Augment Rune,
 			-- Void-Shrouded Tincture (invisibility)
-			{ items = { { 248486, 269586 }, 244639, 132514, 124640, 259085, { 241303, 241302 } } },
+			{ items = { { 248486, 269586 }, { 244639, badge = "H" }, 132514, 124640, { 259085, badge = "P" }, { 241303, 241302 } } },
 		},
 	},
 	{
@@ -144,9 +145,11 @@ local CRAFTING = {
 		-- No section title; each heading names the embellishment group.
 		rows = {
 			-- Grouped by the gear they can go on.
-			-- Blessed Pango Charm, Adorned Fang, Prismatic Focusing Iris,
-			-- Lucky Keychain (recrafting with it removes the embellishment)
-			{ heading = "Embellishments: Most equipment", items = { { 244603, 244604 }, { 273068, 273069 }, { 251487, 251488 }, 248130 } },
+			-- Blessed Pango Charm, Adorned Fang, Prismatic Focusing Iris, Stabilizing Gemstone Bandolier
+			-- (doubles Jewelcrafting embellishments), Lucky Keychain (recrafting with it removes the embellishment)
+			{ heading = "Embellishments: Most equipment", items = {
+				{ 244603, 244604 }, { 273068, 273069 }, { 251487, 251488 }, { 251489, 251490 }, 248130,
+			} },
 			-- Devouring Banding, Primal Spore Binding
 			{ heading = "Embellishments: Weapons and armor", items = { { 244674, 244675 }, { 244607, 244608 } } },
 			-- Arcanoweave Lining, Sunfire Silk Lining, Snakeskin Lining
@@ -318,7 +321,7 @@ local function CreateItemButton(parent, item)
 				local font, size = badge:GetFont()
 				badge:SetFont(font, size, "THICKOUTLINE")
 			end
-			badge:SetPoint("BOTTOMRIGHT", -1, 2)
+			badge:SetPoint("BOTTOM", 0, 2)
 			badge:SetText(item.badge)
 		end
 	else
