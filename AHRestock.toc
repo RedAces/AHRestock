@@ -1,4 +1,4 @@
-## Interface: 120005, 120007, 120100, 120105
+## Interface: 120105
 ## Title: AHRestock
 ## Notes: Your hard-to-remember restock items (consumables, enchants, crafting) one click away in the auction house
 ## Author: RedAces
