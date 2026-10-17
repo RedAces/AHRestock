@@ -159,18 +159,18 @@ local CRAFTING = {
 			-- Blessed Pango Charm, Adorned Fang, Prismatic Focusing Iris, Stabilizing Gemstone Bandolier
 			-- (doubles Jewelcrafting embellishments), Lucky Keychain (recrafting with it removes the embellishment)
 			{ heading = "Embellishments: Most equipment", items = {
-				{ 244603, 244604 }, { 273068, 273069 }, { 251487, 251488 }, { 251489, 251490 }, 248130,
+				{ 244603, 244604 }, { 273068, 273069, badge = "H" }, { 251487, 251488 }, { 251489, 251490 }, 248130,
 			} },
 			-- Devouring Banding, Primal Spore Binding
 			{ heading = "Embellishments: Weapons and armor", items = { { 244674, 244675 }, { 244607, 244608 } } },
 			-- Arcanoweave Lining, Sunfire Silk Lining, Snakeskin Lining
-			{ heading = "Embellishments: Armor", items = { { 240166, 240167 }, { 240164, 240165 }, { 270898, 270899 } } },
+			{ heading = "Embellishments: Armor", items = { { 240166, 240167, badge = "P" }, { 240164, 240165, badge = "P" }, { 270898, 270899 } } },
 			-- Darkmoon Sigils: Blood, Hunt, Rot, Void
-			{ heading = "Embellishments: Weapons and offhands", items = { { 245871, 245872 }, { 245875, 245876 }, { 245877, 245878 }, { 245873, 245874 } } },
+			{ heading = "Embellishments: Weapons and offhands", items = { { 245871, 245872 }, { 245875, 245876 }, { 245877, 245878 }, { 245873, 245874, badge = "V" } } },
 			-- Hunter's Ritual Stone
 			{ heading = "Embellishments: Blacksmithing weapons", items = { { 273059, 273060 } } },
 			-- Polished Ammolite
-			{ heading = "Embellishments: Accessories", items = { { 273065, 273066 } } },
+			{ heading = "Embellishments: Accessories", items = { { 273065, 273066, badge = "C" } } },
 			-- Coiled Snake-Eye
 			{ heading = "Embellishments: Guns", items = { { 273062, 273063 } } },
 		},
