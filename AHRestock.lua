@@ -6,7 +6,8 @@ local ADDON_NAME = ...
 -- { Q1, Q2 } pair for items with crafting qualities, of which only the quality
 -- picked in the panel's top-left switch is shown; { itemID, badge = ... } is a
 -- single item with a badge. An item table's `badge` is a short text drawn in the
--- icon's bottom edge; a row's `heading` is a small caption above it.
+-- icon's bottom edge; its `icon` is a texture fileID shown instead of the
+-- item's own icon. A row's `heading` is a small caption above it.
 local CONSUMABLES = {
 	{
 		title = "Flasks",
@@ -94,11 +95,15 @@ local CONSUMABLES = {
 			-- Eversong Diamonds: Indecipherable (primary stat only), Powerful (+crit
 			-- effectiveness), Stoic (+armor), Telluric (+max mana)
 			{ heading = "Diamonds", items = {
-				{ 240982, 240983, badge = "P" }, { 240966, 240967 }, { 240970, 240971 }, { 240968, 240969 },
+				{ 240982, 240983, badge = "P" }, { 240966, 240967, badge = "C%" },{ 240970, 240971 }, { 240968, 240969 },
 			} },
 		},
 	},
 }
+
+-- Stat icons for the tertiary stat enchants, whose own icons all look alike:
+-- Sprint (Speed), Drain Life (Leech), Feint (Avoidance).
+local SPEED_ICON, LEECH_ICON, AVOIDANCE_ICON = 132307, 136169, 132294
 
 local ENCHANTS = {
 	{
@@ -106,21 +111,27 @@ local ENCHANTS = {
 		rows = {
 			-- Empowered Blessing of Speed, Empowered Hex of Leeching, Empowered Rune of Avoidance
 			{ heading = "Helms", items = {
-				{ 243980, 243981, badge = "S" }, { 243950, 243951, badge = "L" }, { 244006, 244007, badge = "A" },
+				{ 243980, 243981, badge = "S", icon = SPEED_ICON }, { 243950, 243951, badge = "L", icon = LEECH_ICON },
+				{ 244006, 244007, badge = "A", icon = AVOIDANCE_ICON },
 			} },
 			-- Akil'zon's Swiftness, Silvermoon's Mending, Amirdrassil's Grace
 			{ heading = "Shoulders", items = {
-				{ 243962, 243963, badge = "S" }, { 244020, 244021, badge = "L" }, { 243990, 243991, badge = "A" },
+				{ 243962, 243963, badge = "S", icon = SPEED_ICON }, { 244020, 244021, badge = "L", icon = LEECH_ICON },
+				{ 243990, 243991, badge = "A", icon = AVOIDANCE_ICON },
 			} },
 			-- Mark of Nalorakk (Str), Mark of the Magister (Int), Mark of the Rootwarden (Agi),
 			-- Mark of the Worldsoul (primary stat)
-			{ heading = "Chests", items = { { 243946, 243947 }, { 244002, 244003 }, { 243974, 243975 }, { 243976, 243977, badge = "P" } } },
+			{ heading = "Chests", items = { { 243946, 243947, badge = "Str" }, { 244002, 244003, badge = "Int" }, { 243974, 243975, badge = "Agi" },{ 243976, 243977, badge = "P" } } },
 			-- Forest Hunter's Armor Kit (Agi/Str + Stamina), Blood Knight's Armor Kit (Agi/Str + Armor),
 			-- Sunfire Silk Spellthread (Int + Stamina), Arcanoweave Spellthread (Int + max Mana)
-			{ heading = "Legs", items = { { 244640, 244641 }, { 244642, 244643 }, { 240094, 240133 }, { 240154, 240155 } } },
+			{ heading = "Legs", items = {
+				{ 244640, 244641, badge = "Agi\nStr" }, { 244642, 244643, badge = "Agi\nStr" },
+				{ 240094, 240133, badge = "Int" }, { 240154, 240155, badge = "Int" },
+			} },
 			-- Farstrider's Hunt, Shaladrassil's Roots, Lynx's Dexterity
 			{ heading = "Boots", items = {
-				{ 244008, 244009, badge = "S" }, { 243982, 243983, badge = "L" }, { 243952, 243953, badge = "A" },
+				{ 244008, 244009, badge = "S", icon = SPEED_ICON }, { 243982, 243983, badge = "L", icon = LEECH_ICON },
+				{ 243952, 243953, badge = "A", icon = AVOIDANCE_ICON },
 			} },
 			-- Nature's Fury, Silvermoon's Alacrity, Zul'jin's Mastery, Silvermoon's Tenacity,
 			-- Eyes of the Eagle (critical strike effectiveness)
@@ -259,7 +270,7 @@ end
 
 local function SetButtonItem(b, itemID, quality)
 	b.itemID = itemID
-	b.icon:SetTexture(C_Item.GetItemIconByID(itemID) or 134400)
+	b.icon:SetTexture(b.iconOverride or C_Item.GetItemIconByID(itemID) or 134400)
 
 	local atlas = QualityAtlas(quality)
 	if atlas then
@@ -270,7 +281,7 @@ local function SetButtonItem(b, itemID, quality)
 
 	-- Icon may not be cached on first login; refresh once the item data arrives.
 	Item:CreateFromItemID(itemID):ContinueOnItemLoad(function()
-		if b.itemID == itemID then
+		if b.itemID == itemID and not b.iconOverride then
 			b.icon:SetTexture(C_Item.GetItemIconByID(itemID))
 		end
 	end)
@@ -305,6 +316,7 @@ local function CreateItemButton(parent, item)
 	b:SetScript("OnLeave", GameTooltip_Hide)
 
 	if type(item) == "table" then
+		b.iconOverride = item.icon
 		-- { itemID, badge = ... } has a badge but no qualities.
 		if item[2] then
 			b.pair = item
@@ -316,12 +328,13 @@ local function CreateItemButton(parent, item)
 		if item.badge then
 			local badge = b:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
 			-- SetFont fails if EllesmereUI (and its font) is not installed; the
-			-- template font stays then.
-			if not badge:SetFont(BADGE_FONT, 14, "THICKOUTLINE") then
+			-- template font stays then. Two-line badges get a smaller font so
+			-- they don't cover the whole icon.
+			local twoLines = item.badge:find("\n") ~= nil
+			if not badge:SetFont(BADGE_FONT, twoLines and 10 or 14, "THICKOUTLINE") then
 				local font, size = badge:GetFont()
-				badge:SetFont(font, size, "THICKOUTLINE")
-			end
-			badge:SetPoint("BOTTOM", 0, 2)
+				badge:SetFont(font, twoLines and size * 0.75 or size, "THICKOUTLINE")
+			end			badge:SetPoint("BOTTOM", 0, 2)
 			badge:SetText(item.badge)
 		end
 	else
