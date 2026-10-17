@@ -2,5 +2,6 @@ ignore:
   - .gitignore
   - README.md
   - pkgmeta.yaml
-  - media/icon_curseforge.png
+  - media/icon.png
   - make_icon.py
+  - bin/
