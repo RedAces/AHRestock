@@ -165,16 +165,16 @@ local CRAFTING = {
 		},
 	},
 	{
-		-- Thalassian missives as a triangle grid in flask order: rows = first stat
-		-- (C, H, M), columns = second stat (H, M, V); `false` leaves a cell empty.
+		-- Thalassian missives as a triangle grid in flask order: rows = second stat
+		-- (H, M, V), columns = first stat (C, H, M).
 		title = "Missives",
 		rows = {
-			-- Fireflash, Peerless, Quickblade
-			{ items = { { 245785, 245786, badge = "CH" }, { 245789, 245790, badge = "CM" }, { 245791, 245792, badge = "CV" } } },
-			-- Feverflare, Aurora
-			{ items = { false, { 245783, 245784, badge = "HM" }, { 245781, 245782, badge = "HV" } } },
-			-- Harmonious
-			{ items = { false, false, { 245787, 245788, badge = "MV" } } },
+			-- Fireflash
+			{ items = { { 245785, 245786, badge = "CH" } } },
+			-- Peerless, Feverflare
+			{ items = { { 245789, 245790, badge = "CM" }, { 245783, 245784, badge = "HM" } } },
+			-- Quickblade, Aurora, Harmonious
+			{ items = { { 245791, 245792, badge = "CV" }, { 245781, 245782, badge = "HV" }, { 245787, 245788, badge = "MV" } } },
 		},
 	},
 }
@@ -212,7 +212,7 @@ local keyInfoWaiter = CreateFrame("Frame")
 local function OpenBuyView(itemID)
 	local ahf = AuctionHouseFrame
 	if not ahf or not ahf:IsShown() then
-		print("|cff33ff99AuctionQuickLook|r: Open the auction house to buy items.")
+		print("|cff33ff99AHRestock|r: Open the auction house to buy items.")
 		return
 	end
 	local itemKey = C_AuctionHouse.MakeItemKey(itemID)
@@ -264,7 +264,7 @@ local function SetButtonItem(b, itemID, quality)
 	local atlas = QualityAtlas(quality)
 	if atlas then
 		b.quality:SetAtlas(atlas)
-		b.quality:SetSize(18, 18)
+		b.quality:SetSize(22, 22)
 	end
 	b.quality:SetShown(atlas ~= nil)
 
@@ -309,7 +309,7 @@ local function CreateItemButton(parent, item)
 		if item[2] then
 			b.pair = item
 			table.insert(pairButtons, b)
-			SetButtonItem(b, item[AuctionQuickLookDB.quality], AuctionQuickLookDB.quality)
+			SetButtonItem(b, item[AHRestockDB.quality], AHRestockDB.quality)
 		else
 			SetButtonItem(b, item[1])
 		end
@@ -331,7 +331,7 @@ local function CreateItemButton(parent, item)
 end
 
 local function ApplyQuality()
-	local q = AuctionQuickLookDB.quality
+	local q = AHRestockDB.quality
 	for _, check in ipairs(qualityChecks) do
 		check:SetChecked(check.quality == q)
 	end
@@ -354,7 +354,7 @@ local function CreateQualitySwitch(panel)
 		end
 		check.quality = q
 		check:SetScript("OnClick", function()
-			AuctionQuickLookDB.quality = q
+			AHRestockDB.quality = q
 			ApplyQuality()
 		end)
 		local atlas = QualityAtlas(q)
@@ -368,7 +368,7 @@ local function CreateQualitySwitch(panel)
 end
 
 local function BuildPanel(page, index)
-	local panel = CreateFrame("Frame", "AuctionQuickLookPanel" .. index, UIParent, "BackdropTemplate")
+	local panel = CreateFrame("Frame", "AHRestockPanel" .. index, UIParent, "BackdropTemplate")
 	page.panel = panel
 	panel:Hide()
 	panel:SetClampedToScreen(true)
@@ -381,7 +381,7 @@ local function BuildPanel(page, index)
 	panel:SetScript("OnDragStop", function(self)
 		self:StopMovingOrSizing()
 		local point, _, relPoint, px, py = self:GetPoint()
-		AuctionQuickLookDB.pos = { point, relPoint, px, py }
+		AHRestockDB.pos = { point, relPoint, px, py }
 	end)
 	panel.CloseButton = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
 	panel.CloseButton:SetPoint("TOPRIGHT", 0, 0)
@@ -398,7 +398,7 @@ local function BuildPanel(page, index)
 	local switchWidth = CreateQualitySwitch(panel)
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	title:SetPoint("TOPLEFT", PADDING + switchWidth + 12, -PADDING)
-	title:SetText(page.title)
+	title:SetText("AHRestock: " .. page.title)
 	-- Room for switch, title and the standalone close button.
 	local right = PADDING + switchWidth + 12 + title:GetStringWidth() + 24
 
@@ -510,7 +510,7 @@ local function ShowStandalone(page)
 	panel:SetParent(UIParent)
 	panel:SetFrameStrata("HIGH")
 	panel:ClearAllPoints()
-	local pos = AuctionQuickLookDB.pos
+	local pos = AHRestockDB.pos
 	if pos then
 		panel:SetPoint(pos[1], UIParent, pos[2], pos[3], pos[4])
 	else
@@ -542,7 +542,7 @@ end
 local function OnTabClicked(page)
 	local shown = not page.panel:IsShown()
 	SetPageShown(page, shown)
-	AuctionQuickLookDB.openPage = shown and page.key or nil
+	AHRestockDB.openPage = shown and page.key or nil
 end
 
 local function CreateTab(sideBar, page)
@@ -552,7 +552,7 @@ local function CreateTab(sideBar, page)
 		if QuestLogDisplayMode then
 			tab.displayMode = QuestLogDisplayMode.Quests
 		end
-		tab.tooltipText = "AuctionQuickLook: " .. page.title
+		tab.tooltipText = "AHRestock: " .. page.title
 		tab:SetCustomOnMouseUpHandler(onClick)
 	else
 		-- Fallback if the quest log tab template is unavailable.
@@ -587,7 +587,7 @@ local function OnAuctionHouseShown()
 	end
 
 	-- A standalone window that is open when the auction house opens docks to it.
-	local wanted = FindPage(AuctionQuickLookDB.openPage)
+	local wanted = FindPage(AHRestockDB.openPage)
 	for _, page in ipairs(PAGES) do
 		if page.panel.standalone and page.panel:IsShown() then
 			wanted = page
@@ -612,8 +612,8 @@ local function Setup()
 end
 
 EventUtil.ContinueOnAddOnLoaded(ADDON_NAME, function()
-	local db = AuctionQuickLookDB or {}
-	AuctionQuickLookDB = db
+	local db = AHRestockDB or {}
+	AHRestockDB = db
 	-- Older versions kept one `expanded` flag (the only page) and a quality per section.
 	if db.expanded ~= nil then
 		db.openPage = db.expanded and "consumables" or nil
@@ -648,12 +648,12 @@ EventUtil.ContinueOnAddOnLoaded(ADDON_NAME, function()
 	EventUtil.ContinueOnAddOnLoaded("Blizzard_AuctionHouseUI", Setup)
 end)
 
--- /aql [page] toggles a page (by name prefix or number; default: the open one,
+-- /restock [page] toggles a page (by name prefix or number; default: the open one,
 -- else the first): docked tab while the auction house is open, otherwise a
 -- free-floating window.
-SLASH_AUCTIONQUICKLOOK1 = "/aql"
-SLASH_AUCTIONQUICKLOOK2 = "/auctionquicklook"
-SlashCmdList.AUCTIONQUICKLOOK = function(msg)
+SLASH_AHRESTOCK1 = "/restock"
+SLASH_AHRESTOCK2 = "/ahr"
+SlashCmdList.AHRESTOCK = function(msg)
 	msg = strtrim(msg or ""):lower()
 	local page
 	if msg ~= "" then
@@ -662,7 +662,7 @@ SlashCmdList.AUCTIONQUICKLOOK = function(msg)
 			if not page and p.key:sub(1, #msg) == msg then page = p end
 		end
 		if not page then
-			print("|cff33ff99AuctionQuickLook|r: Unknown page. Available: consumables, enchants, crafting")
+			print("|cff33ff99AHRestock|r: Unknown page. Available: consumables, enchants, crafting")
 			return
 		end
 	else

@@ -1,9 +1,0 @@
-## Interface: 120005, 120007, 120100, 120105
-## Title: AuctionQuickLook
-## Notes: Collapsible quick-buy panel for the auction house
-## Author: Matse
-## Version: 0.1.0
-## SavedVariables: AuctionQuickLookDB
-## OptionalDeps: EllesmereUI
-
-AuctionQuickLook.lua

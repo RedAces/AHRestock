@@ -1,0 +1,12 @@
+## Interface: 120005, 120007, 120100, 120105
+## Title: AHRestock
+## Notes: Your hard-to-remember restock items (consumables, enchants, crafting) one click away in the auction house
+## Author: Feylynn-Antonidas
+## Version: 0.1.0
+## SavedVariables: AHRestockDB
+## OptionalDeps: EllesmereUI
+## IconTexture: Interface\AddOns\AHRestock\media\icon
+## X-Curse-Project-ID: 1749760
+## X-Wago-ID: 96d09P6O
+
+AHRestock.lua

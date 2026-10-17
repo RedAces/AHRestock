@@ -1,0 +1,6 @@
+ignore:
+  - .gitignore
+  - README.md
+  - pkgmeta.yaml
+  - media/icon_curseforge.png
+  - make_icon.py
