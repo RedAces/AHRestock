@@ -334,7 +334,12 @@ local function CreateItemButton(parent, item)
 			if not badge:SetFont(BADGE_FONT, twoLines and 10 or 14, "THICKOUTLINE") then
 				local font, size = badge:GetFont()
 				badge:SetFont(font, twoLines and size * 0.75 or size, "THICKOUTLINE")
-			end			badge:SetPoint("BOTTOM", 0, 2)
+			end
+			-- Span the whole icon width: a self-sized font string can round its
+			-- width a pixel short and truncate a single letter (e.g. "H") to nothing.
+			badge:SetPoint("BOTTOMLEFT", 0, 2)
+			badge:SetPoint("BOTTOMRIGHT", 0, 2)
+			badge:SetJustifyH("CENTER")
 			badge:SetText(item.badge)
 		end
 	else
@@ -353,17 +358,32 @@ local function ApplyQuality()
 	end
 end
 
--- Q1/Q2 checkboxes in the panel's top-left corner. They behave like radio
+-- Right-align the quality switch, left of the close button when it is shown.
+local function PlaceQualitySwitch(panel)
+	local close = panel.CloseButton
+	local offsetX = close:IsShown() and -close:GetWidth() or -PADDING
+	panel.qualitySwitch:ClearAllPoints()
+	panel.qualitySwitch:SetPoint("TOPRIGHT", offsetX, -PADDING + 4)
+end
+
+-- Q1/Q2 checkboxes in the panel's top-right corner. They behave like radio
 -- buttons and switch every { Q1, Q2 } item on all pages. Returns the width used.
 local function CreateQualitySwitch(panel)
+	local iconSize = 32
+	local width = 2 * (22 + iconSize + 2)
+	local holder = CreateFrame("Frame", nil, panel)
+	holder:SetSize(width, 22)
+	panel.qualitySwitch = holder
+	PlaceQualitySwitch(panel)
+
 	local anchor
 	for q = 1, 2 do
-		local check = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+		local check = CreateFrame("CheckButton", nil, holder, "UICheckButtonTemplate")
 		check:SetSize(22, 22)
 		if anchor then
 			check:SetPoint("LEFT", anchor, "RIGHT", 2, 0)
 		else
-			check:SetPoint("TOPLEFT", PADDING - 4, -PADDING + 4)
+			check:SetPoint("LEFT")
 		end
 		check.quality = q
 		check:SetScript("OnClick", function()
@@ -371,13 +391,13 @@ local function CreateQualitySwitch(panel)
 			ApplyQuality()
 		end)
 		local atlas = QualityAtlas(q)
-		local label = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+		local label = holder:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 		label:SetPoint("LEFT", check, "RIGHT", 0, 0)
-		label:SetText(atlas and CreateAtlasMarkup(atlas, 24, 24) or ("Q" .. q))
+		label:SetText(atlas and CreateAtlasMarkup(atlas, iconSize, iconSize) or ("Q" .. q))
 		table.insert(qualityChecks, check)
 		anchor = label
 	end
-	return 2 * (22 + 24 + 2)
+	return width
 end
 
 local function BuildPanel(page, index)
@@ -410,10 +430,10 @@ local function BuildPanel(page, index)
 
 	local switchWidth = CreateQualitySwitch(panel)
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	title:SetPoint("TOPLEFT", PADDING + switchWidth + 12, -PADDING)
+	title:SetPoint("TOPLEFT", PADDING, -PADDING)
 	title:SetText("AHRestock: " .. page.title)
-	-- Room for switch, title and the standalone close button.
-	local right = PADDING + switchWidth + 12 + title:GetStringWidth() + 24
+	-- Room for title, switch and the standalone close button.
+	local right = PADDING + title:GetStringWidth() + 12 + switchWidth + 24
 
 	local x, y = 0, -PADDING - 28
 	local top, bottom = y, y
@@ -512,6 +532,7 @@ local function AttachToAuctionHouse(panel)
 	panel:ClearAllPoints()
 	panel:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 2, 0)
 	panel.CloseButton:Hide()
+	PlaceQualitySwitch(panel)
 end
 
 local function ShowStandalone(page)
@@ -530,6 +551,7 @@ local function ShowStandalone(page)
 		panel:SetPoint("CENTER")
 	end
 	panel.CloseButton:Show()
+	PlaceQualitySwitch(panel)
 	panel:Show()
 end
 
