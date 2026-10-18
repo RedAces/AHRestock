@@ -223,7 +223,7 @@ local keyInfoWaiter = CreateFrame("Frame")
 local function OpenBuyView(itemID)
 	local ahf = AuctionHouseFrame
 	if not ahf or not ahf:IsShown() then
-		print("|cff33ff99AHRestock|r: Open the auction house to buy items.")
+		print("|cff33ff99AH Restock|r: Open the auction house to buy items.")
 		return
 	end
 	local itemKey = C_AuctionHouse.MakeItemKey(itemID)
@@ -358,10 +358,14 @@ local function ApplyQuality()
 	end
 end
 
+-- Transparent border around the quality icon in the switch; the switch reaches
+-- that far into the right padding so the visible icon lines up with it.
+local QUALITY_ICON_MARGIN = 8
+
 -- Right-align the quality switch, left of the close button when it is shown.
 local function PlaceQualitySwitch(panel)
 	local close = panel.CloseButton
-	local offsetX = close:IsShown() and -close:GetWidth() or -PADDING
+	local offsetX = (close:IsShown() and -close:GetWidth() or -PADDING) + QUALITY_ICON_MARGIN
 	panel.qualitySwitch:ClearAllPoints()
 	panel.qualitySwitch:SetPoint("TOPRIGHT", offsetX, -PADDING + 4)
 end
@@ -370,9 +374,9 @@ end
 -- buttons and switch every { Q1, Q2 } item on all pages. Returns the width used.
 local function CreateQualitySwitch(panel)
 	local iconSize = 32
-	local width = 2 * (22 + iconSize + 2)
+	local width = 0
 	local holder = CreateFrame("Frame", nil, panel)
-	holder:SetSize(width, 22)
+	holder:SetHeight(22)
 	panel.qualitySwitch = holder
 	PlaceQualitySwitch(panel)
 
@@ -395,9 +399,12 @@ local function CreateQualitySwitch(panel)
 		label:SetPoint("LEFT", check, "RIGHT", 0, 0)
 		label:SetText(atlas and CreateAtlasMarkup(atlas, iconSize, iconSize) or ("Q" .. q))
 		table.insert(qualityChecks, check)
+		-- Measured, not assumed: the markup may render narrower than iconSize.
+		width = width + (anchor and 2 or 0) + 22 + label:GetStringWidth()
 		anchor = label
 	end
-	return width
+	holder:SetWidth(width)
+	return width - QUALITY_ICON_MARGIN
 end
 
 local function BuildPanel(page, index)
@@ -431,7 +438,7 @@ local function BuildPanel(page, index)
 	local switchWidth = CreateQualitySwitch(panel)
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	title:SetPoint("TOPLEFT", PADDING, -PADDING)
-	title:SetText("AHRestock: " .. page.title)
+	title:SetText("AH Restock: " .. page.title)
 	-- Room for title, switch and the standalone close button.
 	local right = PADDING + title:GetStringWidth() + 12 + switchWidth + 24
 
@@ -587,7 +594,7 @@ local function CreateTab(sideBar, page)
 		if QuestLogDisplayMode then
 			tab.displayMode = QuestLogDisplayMode.Quests
 		end
-		tab.tooltipText = "AHRestock: " .. page.title
+		tab.tooltipText = "AH Restock: " .. page.title
 		tab:SetCustomOnMouseUpHandler(onClick)
 	else
 		-- Fallback if the quest log tab template is unavailable.
@@ -668,9 +675,12 @@ EventUtil.ContinueOnAddOnLoaded(ADDON_NAME, function()
 				local panel = page.panel
 				S.Shell(panel, { noTopBar = true })
 				S.CloseButton(panel.CloseButton)
+				-- The panel's own texts are the title and headings; EUI shows
+				-- Blizzard's yellow headings in white.
 				for _, region in ipairs({ panel:GetRegions() }) do
 					if region:GetObjectType() == "FontString" then
 						S.Font(region)
+						S.White(region)
 					end
 				end
 			end
@@ -697,7 +707,7 @@ SlashCmdList.AHRESTOCK = function(msg)
 			if not page and p.key:sub(1, #msg) == msg then page = p end
 		end
 		if not page then
-			print("|cff33ff99AHRestock|r: Unknown page. Available: consumables, enchants, crafting")
+			print("|cff33ff99AH Restock|r: Unknown page. Available: consumables, enchants, crafting")
 			return
 		end
 	else
