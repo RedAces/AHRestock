@@ -201,7 +201,7 @@ local ICON_SIZE = 36
 local ICON_GAP = 6
 local PADDING = 12
 local GROUP_GAP = 16
-local BADGE_FONT = "Interface\\AddOns\\EllesmereUI\\media\\fonts\\Expressway Bold.ttf"
+local BADGE_FONT = "Interface\\AddOns\\AHRestock\\media\\Expressway Bold.ttf"
 
 -- Buttons showing a { Q1, Q2 } pair and the quality checkboxes of all pages.
 local pairButtons, qualityChecks = {}, {}
@@ -287,6 +287,20 @@ local function SetButtonItem(b, itemID, quality)
 	end)
 end
 
+-- Uses the bundled badge font; should SetFont still fail, the template font
+-- stays. Two-line badges get a smaller font so they don't cover the whole icon.
+local function ApplyBadgeFont(badge)
+	local twoLines = badge.text:find("\n") ~= nil
+	badge:SetFontObject(NumberFontNormal)
+	if not badge:SetFont(BADGE_FONT, twoLines and 10 or 14, "THICKOUTLINE") then
+		local font, size = badge:GetFont()
+		badge:SetFont(font, twoLines and size * 0.75 or size, "THICKOUTLINE")
+	end
+	-- Re-set the text so it is laid out with the font now in effect.
+	badge:SetText("")
+	badge:SetText(badge.text)
+end
+
 local function CreateItemButton(parent, item)
 	local b = CreateFrame("Button", nil, parent)
 	b:SetSize(ICON_SIZE, ICON_SIZE)
@@ -327,20 +341,14 @@ local function CreateItemButton(parent, item)
 		end
 		if item.badge then
 			local badge = b:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-			-- SetFont fails if EllesmereUI (and its font) is not installed; the
-			-- template font stays then. Two-line badges get a smaller font so
-			-- they don't cover the whole icon.
-			local twoLines = item.badge:find("\n") ~= nil
-			if not badge:SetFont(BADGE_FONT, twoLines and 10 or 14, "THICKOUTLINE") then
-				local font, size = badge:GetFont()
-				badge:SetFont(font, twoLines and size * 0.75 or size, "THICKOUTLINE")
-			end
+			badge.text = item.badge
 			-- Span the whole icon width: a self-sized font string can round its
 			-- width a pixel short and truncate a single letter (e.g. "H") to nothing.
 			badge:SetPoint("BOTTOMLEFT", 0, 2)
 			badge:SetPoint("BOTTOMRIGHT", 0, 2)
 			badge:SetJustifyH("CENTER")
-			badge:SetText(item.badge)
+			ApplyBadgeFont(badge)
+			table.insert(parent.badges, badge)
 		end
 	else
 		SetButtonItem(b, item)
@@ -411,6 +419,15 @@ local function BuildPanel(page, index)
 	local panel = CreateFrame("Frame", "AHRestockPanel" .. index, UIParent, "BackdropTemplate")
 	page.panel = panel
 	panel:Hide()
+	-- The panels are built at addon load, when the client may not have loaded
+	-- the badge font file yet: the badges then draw empty until their font and
+	-- text are set again, so do that every time the panel opens.
+	panel.badges = {}
+	panel:SetScript("OnShow", function(self)
+		for _, badge in ipairs(self.badges) do
+			ApplyBadgeFont(badge)
+		end
+	end)
 	panel:SetClampedToScreen(true)
 	panel:SetMovable(true)
 	panel:RegisterForDrag("LeftButton")
